@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:async';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter_line_sdk/flutter_line_sdk.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:app_links/app_links.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  await LineSDK.instance.setup("2007733529");
   runApp(const MyApp());
 }
 
@@ -35,8 +41,87 @@ class AuthScreen extends StatefulWidget {
 class _AuthScreenState extends State<AuthScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final _appLinks = AppLinks();
+  StreamSubscription<Uri>? _linkSubscription;
   bool _isLoading = false;
   String _statusMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _initDeepLinks();
+  }
+
+  @override
+  void dispose() {
+    _linkSubscription?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _initDeepLinks() async {
+    _linkSubscription = _appLinks.uriLinkStream.listen((uri) {
+      if (uri.toString().startsWith('firebaseauth://')) {
+        final code = uri.queryParameters['code'];
+        if (code != null) {
+          _processLineCallback(code);
+        }
+      }
+    });
+  }
+
+  Future<void> _processLineCallback(String code) async {
+    setState(() {
+      _isLoading = true;
+      _statusMessage = 'กำลังประมวลผลการเข้าสู่ระบบ...';
+    });
+
+    try {
+      final HttpsCallable callable = FirebaseFunctions.instance.httpsCallable('processLineCallbackHttp');
+      final response = await callable.call(<String, dynamic>{
+        'code': code,
+      });
+
+      final customToken = response.data['token'];
+
+      final UserCredential userCredential = await _auth.signInWithCustomToken(customToken);
+
+      setState(() {
+        _statusMessage = 'เข้าสู่ระบบสำเร็จ!';
+      });
+
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('สำเร็จ'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('ชื่อ: ${userCredential.user?.displayName ?? 'ไม่ระบุ'}'),
+                Text('อีเมล: ${userCredential.user?.email ?? 'ไม่ระบุ'}'),
+                Text('User ID: ${userCredential.user?.uid ?? 'ไม่พบ'}'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('ตกลง'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _statusMessage = 'เกิดข้อผิดพลาด: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   // ฟังก์ชันสำหรับ Google Sign-In
   Future<void> _signInWithGoogle() async {
@@ -112,6 +197,34 @@ class _AuthScreenState extends State<AuthScreen> {
     setState(() {
       _statusMessage = 'ยกเลิกการเข้าสู่ระบบ';
     });
+  }
+
+  // ฟังก์ชันสำหรับ LINE Sign-In
+  Future<void> _signInWithLine() async {
+    setState(() {
+      _isLoading = true;
+      _statusMessage = 'กำลังเข้าสู่ระบบด้วย LINE...';
+    });
+
+    try {
+      final HttpsCallable callable = FirebaseFunctions.instance.httpsCallable('getLineAuthUrlHttp');
+      final response = await callable.call();
+      final authUrl = response.data['url'];
+
+      if (await canLaunch(authUrl)) {
+        await launch(authUrl);
+      } else {
+        throw 'Could not launch $authUrl';
+      }
+    } catch (e) {
+      setState(() {
+        _statusMessage = 'เกิดข้อผิดพลาด: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -198,6 +311,54 @@ class _AuthScreenState extends State<AuthScreen> {
                                     'เข้าสู่ระบบด้วย Google',
                                     style: TextStyle(
                                       color: Colors.grey[800],
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // ปุ่ม LINE Sign-In
+                      Container(
+                        width: double.infinity,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF00B900),
+                          borderRadius: BorderRadius.circular(28),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(28),
+                            onTap: _isLoading ? null : _signInWithLine,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 24),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  // LINE Logo
+                                  Container(
+                                    width: 24,
+                                    height: 24,
+                                    child: Image.network('https://upload.wikimedia.org/wikipedia/commons/4/41/LINE_logo.svg'),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  // ข้อความ
+                                  const Text(
+                                    'เข้าสู่ระบบด้วย LINE',
+                                    style: TextStyle(
+                                      color: Colors.white,
                                       fontSize: 16,
                                       fontWeight: FontWeight.w500,
                                     ),

@@ -7,17 +7,17 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:843584449870:android:d34c3325a04f90c09d021f",
+        "mobilesdk_app_id": "1:843584449870:android:8ff2d8eb5ddd03d39d021f",
         "android_client_info": {
-          "package_name": "com.example.firebase"
+          "package_name": "com.poctech.firebase"
         }
       },
       "oauth_client": [
         {
-          "client_id": "843584449870-i8np84sgo65alat9u8vqnmnvg67hucm8.apps.googleusercontent.com",
+          "client_id": "843584449870-mutn6sjroo3cvvaujl16qoo39n8j52rp.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.example.firebase",
+            "package_name": "com.poctech.firebase",
             "certificate_hash": "faf71dbe05def974f25bc4c3ec6947eda5c80a1d"
           }
         },
@@ -37,35 +37,13 @@
             {
               "client_id": "843584449870-54cl22un54s20pa1auo83vjmuqpi2hnl.apps.googleusercontent.com",
               "client_type": 3
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:843584449870:android:8ff2d8eb5ddd03d39d021f",
-        "android_client_info": {
-          "package_name": "com.poctech.firebase"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "843584449870-54cl22un54s20pa1auo83vjmuqpi2hnl.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyBZVG-uAAosSrjHcYJRq3zbwTXWjHzz3lQ"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
+            },
             {
-              "client_id": "843584449870-54cl22un54s20pa1auo83vjmuqpi2hnl.apps.googleusercontent.com",
-              "client_type": 3
+              "client_id": "843584449870-3fubklkfa29kflp7dakbnbonhbhucdrv.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.firebase"
+              }
             }
           ]
         }

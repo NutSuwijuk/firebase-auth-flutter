@@ -43,6 +43,8 @@ dependencies:
   google_sign_in: ^6.2.1
   cloud_functions: ^6.0.0
   flutter_line_sdk: ^2.6.1
+  url_launcher: ^6.2.1
+  app_links: ^3.4.1
 
 dev_dependencies:
   flutter_test:
